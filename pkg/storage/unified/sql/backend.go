@@ -10,18 +10,19 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
+	"google.golang.org/protobuf/proto"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/storage/unified/resource"
 	"github.com/grafana/grafana/pkg/storage/unified/sql/db"
 	"github.com/grafana/grafana/pkg/storage/unified/sql/dbutil"
 	"github.com/grafana/grafana/pkg/storage/unified/sql/sqltemplate"
-	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
-	"google.golang.org/protobuf/proto"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-const trace_prefix = "sql.resource."
+const tracePrefix = "resource."
 
 type Backend interface {
 	resource.StorageBackend
@@ -111,7 +112,7 @@ func (b *backend) Stop(_ context.Context) error {
 }
 
 func (b *backend) WriteEvent(ctx context.Context, event resource.WriteEvent) (int64, error) {
-	_, span := b.tracer.Start(ctx, trace_prefix+"WriteEvent")
+	_, span := b.tracer.Start(ctx, tracePrefix+"WriteEvent")
 	defer span.End()
 	// TODO: validate key ?
 	switch event.Type {
@@ -127,7 +128,7 @@ func (b *backend) WriteEvent(ctx context.Context, event resource.WriteEvent) (in
 }
 
 func (b *backend) create(ctx context.Context, event resource.WriteEvent) (int64, error) {
-	ctx, span := b.tracer.Start(ctx, trace_prefix+"Create")
+	ctx, span := b.tracer.Start(ctx, tracePrefix+"Create")
 	defer span.End()
 	var newVersion int64
 	guid := uuid.New().String()
@@ -185,7 +186,7 @@ func (b *backend) create(ctx context.Context, event resource.WriteEvent) (int64,
 }
 
 func (b *backend) update(ctx context.Context, event resource.WriteEvent) (int64, error) {
-	ctx, span := b.tracer.Start(ctx, trace_prefix+"Update")
+	ctx, span := b.tracer.Start(ctx, tracePrefix+"Update")
 	defer span.End()
 	var newVersion int64
 	guid := uuid.New().String()
@@ -244,7 +245,7 @@ func (b *backend) update(ctx context.Context, event resource.WriteEvent) (int64,
 }
 
 func (b *backend) delete(ctx context.Context, event resource.WriteEvent) (int64, error) {
-	ctx, span := b.tracer.Start(ctx, trace_prefix+"Delete")
+	ctx, span := b.tracer.Start(ctx, tracePrefix+"Delete")
 	defer span.End()
 	var newVersion int64
 	guid := uuid.New().String()
@@ -296,7 +297,7 @@ func (b *backend) delete(ctx context.Context, event resource.WriteEvent) (int64,
 }
 
 func (b *backend) ReadResource(ctx context.Context, req *resource.ReadRequest) *resource.ReadResponse {
-	_, span := b.tracer.Start(ctx, trace_prefix+".Read")
+	_, span := b.tracer.Start(ctx, tracePrefix+".Read")
 	defer span.End()
 
 	// TODO: validate key ?
@@ -331,7 +332,7 @@ func (b *backend) ReadResource(ctx context.Context, req *resource.ReadRequest) *
 }
 
 func (b *backend) ListIterator(ctx context.Context, req *resource.ListRequest, cb func(resource.ListIterator) error) (int64, error) {
-	_, span := b.tracer.Start(ctx, trace_prefix+"List")
+	_, span := b.tracer.Start(ctx, tracePrefix+"List")
 	defer span.End()
 
 	if req.Options == nil || req.Options.Key.Group == "" || req.Options.Key.Resource == "" {
@@ -602,7 +603,7 @@ func fetchLatestRV(ctx context.Context, x db.ContextExecer, d sqltemplate.Dialec
 }
 
 func (b *backend) poll(ctx context.Context, grp string, res string, since int64, stream chan<- *resource.WrittenEvent) (int64, error) {
-	ctx, span := b.tracer.Start(ctx, trace_prefix+"poll")
+	ctx, span := b.tracer.Start(ctx, tracePrefix+"poll")
 	defer span.End()
 
 	var records []*historyPollResponse
