@@ -9,11 +9,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/grafana/grafana/pkg/api/routing"
+	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/db"
+	"github.com/grafana/grafana/pkg/infra/httpclient"
 	"github.com/grafana/grafana/pkg/infra/kvstore"
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/plugins"
+	"github.com/grafana/grafana/pkg/services/accesscontrol/actest"
+	"github.com/grafana/grafana/pkg/services/annotations/annotationstest"
 	"github.com/grafana/grafana/pkg/services/cloudmigration"
 	"github.com/grafana/grafana/pkg/services/cloudmigration/gmsclient"
 	"github.com/grafana/grafana/pkg/services/contexthandler/ctxkey"
@@ -24,7 +28,12 @@ import (
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/folder"
 	"github.com/grafana/grafana/pkg/services/folder/foldertest"
+	"github.com/grafana/grafana/pkg/services/ngalert"
+	"github.com/grafana/grafana/pkg/services/ngalert/metrics"
+	ngalertstore "github.com/grafana/grafana/pkg/services/ngalert/store"
+	ngalertfakes "github.com/grafana/grafana/pkg/services/ngalert/tests/fakes"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginstore"
+	"github.com/grafana/grafana/pkg/services/quota/quotatest"
 	secretsfakes "github.com/grafana/grafana/pkg/services/secrets/fakes"
 	secretskv "github.com/grafana/grafana/pkg/services/secrets/kvstore"
 	"github.com/grafana/grafana/pkg/services/user"
@@ -610,11 +619,29 @@ func setUpServiceTest(t *testing.T, withDashboardMock bool) cloudmigration.Servi
 		},
 	}
 
+	featureToggles := featuremgmt.WithFeatures(featuremgmt.FlagOnPremToCloudMigrations, featuremgmt.FlagDashboardRestore)
+
+	kvStore := kvstore.ProvideService(sqlStore)
+
+	bus := bus.ProvideBus(tracer)
+	fakeAccessControl := actest.FakeAccessControl{}
+	fakeAccessControlService := actest.FakeService{}
+	alertMetrics := metrics.NewNGAlert(prometheus.NewRegistry())
+
+	ruleStore, err := ngalertstore.ProvideDBStore(cfg, featureToggles, sqlStore, mockFolder, dashboardService, fakeAccessControl)
+	require.NoError(t, err)
+
+	ng, err := ngalert.ProvideService(
+		cfg, featureToggles, nil, nil, rr, sqlStore, kvStore, nil, nil, quotatest.New(false, nil),
+		secretsService, nil, alertMetrics, mockFolder, fakeAccessControl, dashboardService, nil, bus, fakeAccessControlService,
+		annotationstest.NewFakeAnnotationsRepo(), &pluginstore.FakePluginStore{}, tracer, ruleStore,
+		httpclient.NewProvider(), ngalertfakes.NewFakeReceiverPermissionsService(),
+	)
+	require.NoError(t, err)
+
 	s, err := ProvideService(
 		cfg,
-		featuremgmt.WithFeatures(
-			featuremgmt.FlagOnPremToCloudMigrations,
-			featuremgmt.FlagDashboardRestore),
+		featureToggles,
 		sqlStore,
 		dsService,
 		secretskv.NewFakeSQLSecretsKVStore(t, sqlStore),
@@ -625,7 +652,8 @@ func setUpServiceTest(t *testing.T, withDashboardMock bool) cloudmigration.Servi
 		dashboardService,
 		mockFolder,
 		&pluginstore.FakePluginStore{},
-		kvstore.ProvideService(sqlStore),
+		kvStore,
+		ng,
 	)
 	require.NoError(t, err)
 
