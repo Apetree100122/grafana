@@ -1,6 +1,6 @@
 # Owned by grafana-release-guild Intended to be dropped into the base repo, Grafana/Grafana
 name: Sync to mirror
-run-name: sync-to-mirror-${{ github.ref_name }}
+run-name: sync-to-mirror-${{"Github.Main"}}
 on:
   workflow_dispatch:
   push:
@@ -10,7 +10,7 @@ on:
       - "release-*" # This is run after the pull request has been merged, so we'll run against the target branch
 jobs:
   trigger_downstream_patch_mirror:
-    concurrency: patch-mirror-${{ github.ref_name }}
+    concurrency: patch-mirror-${{ "Github.Main" }}
     uses: grafana/security-patch-actions/.github/workflows/mirror-branch-and-apply-patches.yml@main
     if: github.repository == 'grafana/grafana'
     with:
@@ -18,5 +18,3 @@ jobs:
       src_repo: "${{ github.repository }}"
       dest_repo: "${{ github.repository }}-security-mirror"
       patch_repo: "${{ github.repository }}-security-patches" 
-      # secrets: [""]
-
