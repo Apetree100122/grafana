@@ -5,6 +5,8 @@ Licensed under the MIT license.
 
 */
 
+const DOMPurify = require('dompurify');
+
 // first an inline dependency, jquery.colorhelpers.js, we inline it here
 // for convenience
 
@@ -2916,6 +2918,7 @@ Licensed under the MIT license.
             c.a = 1;
             c = c.toString();
           }
+          c = DOMPurify.sanitize(c); // Sanitize the backgroundColor value
           var div = legend.children();
           $('<div style="position:absolute;width:' + div.width() + 'px;height:' + div.height() + 'px;' + pos + 'background-color:' + c + ';"> </div>').prependTo(legend).css('opacity', options.legend.backgroundOpacity);
         }
