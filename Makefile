@@ -1,12 +1,9 @@
 ## This is a self-documented Makefile. For usage information, run `make help`:
 ##
 ## For more information, refer to https://suva.sh/posts/well-documented-makefiles/
-
 WIRE_TAGS = "oss"
-
 -include local/Makefile
 include .bingo/Variables.mk
-
 GO = go
 GO_VERSION = 1.23.1
 GO_LINT_FILES ?= $(shell ./scripts/go-workspace/golangci-lint-includes.sh)
@@ -17,20 +14,14 @@ GO_RACE_FLAG := $(if $(GO_RACE),-race)
 GO_BUILD_FLAGS += $(if $(GO_BUILD_DEV),-dev)
 GO_BUILD_FLAGS += $(if $(GO_BUILD_TAGS),-build-tags=$(GO_BUILD_TAGS))
 GO_BUILD_FLAGS += $(GO_RACE_FLAG)
-
 targets := $(shell echo '$(sources)' | tr "," " ")
-
 GO_INTEGRATION_TESTS := $(shell find ./pkg -type f -name '*_test.go' -exec grep -l '^func TestIntegration' '{}' '+' | grep -o '\(.*\)/' | sort -u)
-
 .PHONY: all
 all: deps build
-
 ##@ Dependencies
-
 .PHONY: deps-go
 deps-go: ## Install backend dependencies.
 	$(GO) run $(GO_RACE_FLAG) build.go setup
-
 .PHONY: deps-js
 deps-js: node_modules ## Install frontend dependencies.
 
@@ -412,7 +403,6 @@ gen-ts:
 	go get github.com/tkrajina/typescriptify-golang-structs/typescriptify@v0.1.7
 	tscriptify -interface -package=github.com/grafana/grafana/pkg/services/live/pipeline -import="import { FieldConfig } from '@grafana/data'" -target=public/app/features/live/pipeline/models.gen.ts pkg/services/live/pipeline/config.go
 	go mod tidy
-
 # This repository's configuration is protected (https://readme.drone.io/signature/).
 # Use this make target to regenerate the configuration YAML files when
 # you modify starlark files.
@@ -427,11 +417,9 @@ drone: $(DRONE)
 .PHONY: scripts/drone/TAGS
 scripts/drone/TAGS: $(shell find scripts/drone -name '*.star')
 	etags --lang none --regex="/def \(\w+\)[^:]+:/\1/" --regex="/\s*\(\w+\) =/\1/" $^ -o $@
-
 .PHONY: format-drone
 format-drone:
 	buildifier --lint=fix -r scripts/drone
-
 .PHONY: go-race-is-enabled
 go-race-is-enabled:
 	@if [ -n "$(GO_RACE)" ]; then \
@@ -439,17 +427,13 @@ go-race-is-enabled:
 	else \
 		echo "The Go race detector is NOT enabled locally, boo!"; \
 	fi;
-
 .PHONY: enable-go-race
 enable-go-race:
 	@touch .go-race-enabled-locally
-
 check-tparse:
 	@command -v tparse >/dev/null 2>&1 || { \
 		echo >&2 "Error: tparse is not installed. Refer to https://github.com/mfridman/tparse"; \
-		exit 1; \
 	}
-
 .PHONY: help
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
