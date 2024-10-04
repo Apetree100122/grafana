@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/log"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func TestInitializer_Initialize(t *testing.T) {
@@ -116,7 +116,7 @@ type fakeBackendProvider struct {
 }
 
 func (f *fakeBackendProvider) BackendFactory(_ context.Context, _ *plugins.Plugin) backendplugin.PluginFactoryFunc {
-	return func(_ string, _ log.Logger, _ tracing.Tracer, _ func() []string) (backendplugin.Plugin, error) {
+	return func(_ string, _ log.Logger, _ trace.Tracer, _ func() []string) (backendplugin.Plugin, error) {
 		return f.plugin, nil
 	}
 }

@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"go.opentelemetry.io/otel/trace"
 
-	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/auth"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
@@ -341,7 +341,7 @@ func NewFakeBackendProcessProvider() *FakeBackendProcessProvider {
 	}
 	f.BackendFactoryFunc = func(ctx context.Context, p *plugins.Plugin) backendplugin.PluginFactoryFunc {
 		f.Requested[p.ID]++
-		return func(pluginID string, _ log.Logger, _ tracing.Tracer, _ func() []string) (backendplugin.Plugin, error) {
+		return func(pluginID string, _ log.Logger, _ trace.Tracer, _ func() []string) (backendplugin.Plugin, error) {
 			f.Invoked[pluginID]++
 			return &FakePluginClient{}, nil
 		}
