@@ -410,7 +410,8 @@
     "uuid": "9.0.1",
     "visjs-network": "4.25.0",
     "whatwg-fetch": "3.6.20",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz",
+    "dompurify": "^3.1.7"
   },
   "resolutions": {
     "underscore": "1.13.7",
